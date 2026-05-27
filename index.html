@@ -1,0 +1,505 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Shopping List</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #f6f7f8;
+      --card: #ffffff;
+      --text: #17202a;
+      --muted: #667085;
+      --border: #d0d5dd;
+      --accent: #2563eb;
+      --danger: #b42318;
+      --shadow: 0 12px 28px rgba(16, 24, 40, 0.08);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #101418;
+        --card: #171c22;
+        --text: #f2f4f7;
+        --muted: #98a2b3;
+        --border: #344054;
+        --accent: #60a5fa;
+        --danger: #f97066;
+        --shadow: none;
+      }
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding: 20px;
+    }
+
+    main {
+      max-width: 760px;
+      margin: 0 auto;
+    }
+
+    .app-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    header {
+      padding: 24px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    h1 {
+      margin: 0 0 6px;
+      font-size: clamp(28px, 6vw, 42px);
+      line-height: 1;
+      letter-spacing: -0.04em;
+    }
+
+    .subtitle {
+      margin: 0;
+      color: var(--muted);
+      font-size: 15px;
+    }
+
+    .controls {
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--border);
+      display: grid;
+      gap: 12px;
+    }
+
+    .add-row {
+      display: grid;
+      grid-template-columns: 1fr auto auto;
+      gap: 10px;
+    }
+
+    input, select, button {
+      font: inherit;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      padding: 12px 14px;
+      background: transparent;
+      color: var(--text);
+    }
+
+    input:focus, select:focus, button:focus {
+      outline: 3px solid color-mix(in srgb, var(--accent) 25%, transparent);
+      border-color: var(--accent);
+    }
+
+    button {
+      cursor: pointer;
+      background: var(--accent);
+      color: white;
+      border-color: var(--accent);
+      font-weight: 700;
+    }
+
+    button.secondary {
+      background: transparent;
+      color: var(--text);
+      border-color: var(--border);
+    }
+
+    button.danger {
+      background: transparent;
+      color: var(--danger);
+      border-color: var(--border);
+    }
+
+    .hint {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    .category-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+    }
+
+    .list-wrap {
+      padding: 8px 0;
+    }
+
+    .category-title {
+      margin: 18px 24px 8px;
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      font-weight: 800;
+    }
+
+    .item {
+      display: grid;
+      grid-template-columns: auto 1fr minmax(120px, 180px) auto;
+      gap: 12px;
+      align-items: center;
+      padding: 12px 24px;
+      border-top: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+    }
+
+    .item:first-of-type { border-top: 0; }
+
+    .item input[type="checkbox"] {
+      width: 24px;
+      height: 24px;
+      accent-color: var(--accent);
+    }
+
+    .item-name {
+      font-size: 17px;
+      word-break: break-word;
+    }
+
+    .item.checked .item-name {
+      text-decoration: line-through;
+      color: var(--muted);
+    }
+
+    .empty {
+      padding: 36px 24px;
+      text-align: center;
+      color: var(--muted);
+    }
+
+    footer {
+      padding: 16px 24px 22px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .footer-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    [hidden] {
+      display: none !important;
+    }
+
+    .toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 14px;
+      user-select: none;
+    }
+
+    .toggle input {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--accent);
+    }
+
+    @media (max-width: 640px) {
+      body { padding: 12px; }
+      .add-row, .category-row { grid-template-columns: 1fr; }
+      .item {
+        grid-template-columns: auto 1fr auto;
+      }
+      .item select {
+        grid-column: 2 / -1;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="app-card" aria-label="Shopping list app">
+      <header>
+        <h1>Shopping List</h1>
+        <p class="subtitle">Add items by typing, using the mic button, or opening this page with <strong>?add=milk</strong>.</p>
+      </header>
+
+      <section class="controls">
+        <form class="add-row" id="addForm">
+          <input id="itemInput" autocomplete="off" placeholder="Add item, e.g. milk" aria-label="Item name" />
+          <button type="button" class="secondary" id="speakButton">🎙️ Speak</button>
+          <button type="submit">Add</button>
+        </form>
+
+        <form class="category-row" id="categoryForm">
+          <input id="categoryInput" autocomplete="off" placeholder="Add category, e.g. Bakery" aria-label="New category" />
+          <button type="submit" class="secondary">Add category</button>
+        </form>
+
+        <div class="hint" id="speechHint">
+          Tip for Siri: create an iPhone Shortcut that dictates text, then opens https://www.projexed.com/shopping-list/?add=[dictated text].
+        </div>
+      </section>
+
+      <section class="list-wrap" id="list" aria-live="polite"></section>
+
+      <footer>
+        <span class="hint" id="countText">0 items</span>
+        <div class="footer-actions">
+          <label class="toggle" id="showCheckedLabel" hidden>
+            <input type="checkbox" id="showCheckedToggle" />
+            Show ticked items
+          </label>
+          <button class="danger" id="clearCheckedButton" hidden>Clear ticked items</button>
+        </div>
+      </footer>
+    </section>
+  </main>
+
+  <script>
+    const STORAGE_KEY = "projexed-shopping-list-v1";
+    const DEFAULT_CATEGORIES = ["Uncategorised", "Bakery", "Dairy", "Fruit & Veg", "Meat", "Frozen", "Household", "Other"];
+
+    const state = loadState();
+
+    const listEl = document.getElementById("list");
+    const addForm = document.getElementById("addForm");
+    const itemInput = document.getElementById("itemInput");
+    const speakButton = document.getElementById("speakButton");
+    const categoryForm = document.getElementById("categoryForm");
+    const categoryInput = document.getElementById("categoryInput");
+    const clearCheckedButton = document.getElementById("clearCheckedButton");
+    const showCheckedToggle = document.getElementById("showCheckedToggle");
+    const showCheckedLabel = document.getElementById("showCheckedLabel");
+    const countText = document.getElementById("countText");
+    const speechHint = document.getElementById("speechHint");
+
+    function loadState() {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (!saved) return { items: [], categories: DEFAULT_CATEGORIES };
+
+      try {
+        const parsed = JSON.parse(saved);
+        return {
+          items: Array.isArray(parsed.items) ? parsed.items : [],
+          categories: Array.isArray(parsed.categories) && parsed.categories.length ? parsed.categories : DEFAULT_CATEGORIES
+        };
+      } catch {
+        return { items: [], categories: DEFAULT_CATEGORIES };
+      }
+    }
+
+    function saveState() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
+
+    function normalise(value) {
+      return value.trim().replace(/\s+/g, " ");
+    }
+
+    function itemKey(value) {
+      return normalise(value).toLocaleLowerCase();
+    }
+
+    function addItem(name, category = "Uncategorised") {
+      const cleanName = normalise(name);
+      if (!cleanName) return;
+
+      const existing = state.items.find(item => itemKey(item.name) === itemKey(cleanName));
+      if (existing) {
+        existing.checked = false;
+        existing.name = cleanName;
+      } else {
+        state.items.push({
+          id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random()),
+          name: cleanName,
+          checked: false,
+          category: state.categories.includes(category) ? category : "Uncategorised",
+          createdAt: new Date().toISOString()
+        });
+      }
+
+      saveState();
+      render();
+    }
+
+    function addCategory(name) {
+      const cleanName = normalise(name);
+      if (!cleanName) return;
+
+      const exists = state.categories.some(category => category.toLocaleLowerCase() === cleanName.toLocaleLowerCase());
+      if (!exists) {
+        state.categories.push(cleanName);
+        state.categories.sort((a, b) => a.localeCompare(b));
+        if (!state.categories.includes("Uncategorised")) state.categories.unshift("Uncategorised");
+      }
+
+      saveState();
+      render();
+    }
+
+    function sortedItems() {
+      const visibleItems = showCheckedToggle.checked
+        ? state.items
+        : state.items.filter(item => !item.checked);
+
+      return [...visibleItems].sort((a, b) => {
+        const categoryCompare = a.category.localeCompare(b.category);
+        if (categoryCompare !== 0) return categoryCompare;
+        return a.name.localeCompare(b.name);
+      });
+    }
+
+    function render() {
+      listEl.innerHTML = "";
+
+      const items = sortedItems();
+      const uncheckedCount = state.items.filter(item => !item.checked).length;
+      const checkedCount = state.items.length - uncheckedCount;
+      countText.textContent = `${uncheckedCount} to buy · ${checkedCount} ticked`;
+      showCheckedLabel.hidden = checkedCount === 0;
+      if (checkedCount === 0) showCheckedToggle.checked = false;
+      clearCheckedButton.hidden = !showCheckedToggle.checked || checkedCount === 0;
+
+      if (items.length === 0) {
+        listEl.innerHTML = state.items.length === 0
+          ? '<div class="empty">Your list is empty.</div>'
+          : '<div class="empty">All visible items are ticked off. Turn on “Show ticked items” to see them.</div>';
+        return;
+      }
+
+      let currentCategory = null;
+      for (const item of items) {
+        if (item.category !== currentCategory) {
+          currentCategory = item.category;
+          const heading = document.createElement("h2");
+          heading.className = "category-title";
+          heading.textContent = currentCategory;
+          listEl.appendChild(heading);
+        }
+
+        const row = document.createElement("div");
+        row.className = `item ${item.checked ? "checked" : ""}`;
+
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.checked = item.checked;
+        checkbox.setAttribute("aria-label", `Tick off ${item.name}`);
+        checkbox.addEventListener("change", () => {
+          item.checked = checkbox.checked;
+          saveState();
+          render();
+        });
+
+        const name = document.createElement("div");
+        name.className = "item-name";
+        name.textContent = item.name;
+
+        const categorySelect = document.createElement("select");
+        categorySelect.setAttribute("aria-label", `Category for ${item.name}`);
+        for (const category of state.categories) {
+          const option = document.createElement("option");
+          option.value = category;
+          option.textContent = category;
+          option.selected = category === item.category;
+          categorySelect.appendChild(option);
+        }
+        categorySelect.addEventListener("change", () => {
+          item.category = categorySelect.value;
+          saveState();
+          render();
+        });
+
+        const deleteButton = document.createElement("button");
+        deleteButton.type = "button";
+        deleteButton.className = "danger";
+        deleteButton.textContent = "Delete";
+        deleteButton.addEventListener("click", () => {
+          state.items = state.items.filter(candidate => candidate.id !== item.id);
+          saveState();
+          render();
+        });
+
+        row.append(checkbox, name, categorySelect, deleteButton);
+        listEl.appendChild(row);
+      }
+    }
+
+    addForm.addEventListener("submit", event => {
+      event.preventDefault();
+      addItem(itemInput.value);
+      itemInput.value = "";
+      itemInput.focus();
+    });
+
+    categoryForm.addEventListener("submit", event => {
+      event.preventDefault();
+      addCategory(categoryInput.value);
+      categoryInput.value = "";
+    });
+
+    clearCheckedButton.addEventListener("click", () => {
+      state.items = state.items.filter(item => !item.checked);
+      saveState();
+      render();
+    });
+
+    showCheckedToggle.addEventListener("change", render);
+
+    function addFromUrl() {
+      const params = new URLSearchParams(window.location.search);
+      const value = params.get("add") || params.get("item");
+      if (value) {
+        addItem(value);
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+    }
+
+    function setupSpeechInput() {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) {
+        speakButton.disabled = true;
+        speechHint.textContent = "Speech input is not available in this browser. The Siri Shortcut URL method still works on iPhone.";
+        return;
+      }
+
+      const recognition = new SpeechRecognition();
+      recognition.lang = navigator.language || "en-GB";
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
+
+      speakButton.addEventListener("click", () => {
+        speakButton.textContent = "Listening…";
+        recognition.start();
+      });
+
+      recognition.addEventListener("result", event => {
+        const transcript = event.results[0][0].transcript;
+        itemInput.value = transcript;
+        addItem(transcript);
+      });
+
+      recognition.addEventListener("end", () => {
+        speakButton.textContent = "🎙️ Speak";
+      });
+
+      recognition.addEventListener("error", () => {
+        speakButton.textContent = "🎙️ Speak";
+      });
+    }
+
+    addFromUrl();
+    setupSpeechInput();
+    render();
+  </script>
+</body>
+</html>
